@@ -7,30 +7,30 @@ IMAGES_DIR <- './images'
 OUTPUT_DIR <- './output'
 
 make_dir <- function(d) {
-    if (file.exists(d)) unlink(d, recursive=TRUE, force=TRUE)
-    dir.create(d)
+  if (file.exists(d)) unlink(d, recursive=TRUE, force=TRUE)
+  dir.create(d)
 }
 lapply(c(IMAGES_DIR, OUTPUT_DIR),make_dir)
 
 
 ## function that concatenates strings (useful for directory paths)
 concat <- function(x1,x2) {
-    result <- paste(x1,x2,sep="")
-    return(result)
+  result <- paste(x1,x2,sep="")
+  return(result)
 }
 
 ## function that checks to see if a package is installed and,if not,installs it
 ## portions of this code came from http://stackoverflow.com/questions/9341635/how-can-i-check-for-installed-r-packages-before-running-install-packages
 load_package <- function(x) {
-    if (x %in% rownames(installed.packages())) { 
-        print(concat("package already installed: ", x))
-    }
-    else { 
-        install.packages(x) 
-    }
-    library(x, character.only=TRUE)
+  if (x %in% rownames(installed.packages())) { 
+    print(concat("package already installed: ", x))
+  }
+  else { 
+    install.packages(x) 
+  }
+  library(x, character.only=TRUE)
 }
-lapply(c("car","psych"), load_package)
+lapply(c("car","psych","ggplot2", "grid", "gridExtra"), load_package)
 
 #######################################################
 # PROBLEM 1                                           #
@@ -51,6 +51,7 @@ lapply(c("car","psych"), load_package)
 # MEDV: Median value of owner-occupied homes in $1000's (output variable)
 # import the housing.data file
 data <- read.table(concat(DATA_DIR,'/housing.data'), header=F)
+# rename the columns to something more human-readable
 colnames(data) <- c('per_capita_crime_rate',
                     'zoned_over_25k_sq_ft',
                     'business_acres',
@@ -65,7 +66,8 @@ colnames(data) <- c('per_capita_crime_rate',
                     'african_american_proportion',
                     'percent_lower_status',
                     'median_home_value')
-write.table(describe(data), file=concat(OUTPUT_DIR,'/problem1_descriptions.csv'), sep=",")
+# describe the data
+write.table(describe(data), file=concat(OUTPUT_DIR,'/housing - descriptions.csv'), sep=",")
 # create variable vectors
 per_capita_crime_rate            <- data$per_capita_crime_rate
 zoned_over_25k_sq_ft             <- data$zoned_over_25k_sq_ft
@@ -82,58 +84,106 @@ african_american_proportion      <- data$african_american_proportion
 percent_lower_status             <- data$percent_lower_status
 median_home_value                <- data$median_home_value
 
+
+# function to plot histograms
+plot_histogram <- function (d, v, name) {
+  # v is the vector we are plotting
+  # name is the name of the vector
+  y_max_offset <- function(y, offset) {
+    y - (0.1 * y * offset)
+  }
+  m <- mean(v)
+  y_max <- max(v)
+  ggplot(d, aes(x=v), environment = environment()) +
+    geom_histogram(binwidth=1, col="black", aes(fill=..count..)) +
+    geom_vline(data=d, aes(xintercept=m),
+               linetype="dashed", size=1, colour="black") +
+    scale_fill_gradient("Count", low = "green", high = "red") +
+    annotate("text", x = m+0.5*m, y = y_max, label = concat("mean: ", round(m,4)), hjust = 0) +
+    annotate("text", x = m+0.5*m, y = y_max_offset(y_max, 1), label = concat("skew: ", round(skew(v),4)), hjust = 0) +
+    annotate("text", x = m+0.5*m, y = y_max_offset(y_max, 2), label = concat("kurtosis: ", round(kurtosi(v),4)), hjust = 0) +
+    labs(title=concat("Histogram for ", name)) +
+    labs(x=name, y="Count")
+}
 # what does the histogram of median home value look like?
-load_package('ggplot2')
-png(concat(IMAGES_DIR,'/problem1_histogram_median_home_value.png'), width = 512, height = 512)
-ggplot(data, aes(x=median_home_value)) + 
-    geom_histogram(binwidth=1, colour="black", fill="white") + 
-    geom_vline(data=data, aes(xintercept=mean(median_home_value)),
-               linetype="dashed", size=1, colour="red") + 
-    labs(title="Histogram for Median Home Value in $1000's") +
-    labs(x="Median Home Value in $1000's", y="Frequency")
+name <- "Median Home Value in $1000's"
+png(concat(IMAGES_DIR,concat(concat('/housing - histogram of ', name), '.png')), 
+    width = 1024, height = 1024)
+plot_histogram(data, median_home_value, name)
 dev.off()
 
-# what is the skew of the dependent variable?
-load_package('psych')
-describe(median_home_value)$skew
-
 # look at relationships between variables
-write.table(cor(data), file=concat(OUTPUT_DIR,'/problem1_model_correlations.csv'), sep=",")
-png(concat(IMAGES_DIR,'/problem1_scatterplot_matrix.png'), 
+write.table(cor(data), file=concat(OUTPUT_DIR,'/housing - correlations.csv'), sep=",")
+png(concat(IMAGES_DIR,'/housing - scattplot matrix.png'), 
     width = 2048, height = 2048)
 scatterplotMatrix(data, diagonal="density")
 dev.off()
 
-# enhanced scatter plots using the car (Companion to Applied Regression) package
-png(concat(IMAGES_DIR,'/problem1_per_capita_crime_rate_vs_median_home_value.png'))
+# scatterplot of per capita crime rate versus median_home_value
+png(concat(IMAGES_DIR,'/housing - per capita crime rate versus median home value.png'), 
+    width = 1024, height = 1024)
 scatterplot(median_home_value~per_capita_crime_rate, 
             xlab="Per Capita Crime Rate", 
             ylab="Median Home Value (in $1000's)", 
             main="Enhanced Scatterplot of \n Per Capita Crime Rate vs. Median Home Value (in $1000's)")
 dev.off()
 
-png(concat(IMAGES_DIR,'/problem1_zoned_over_25k_sq_ft_vs_median_home_value.png'))
-scatterplot(median_home_value~zoned_over_25k_sq_ft, 
-            xlab="Zoned Lots", 
+# per capita crime rate appears to need a transformation
+per_capita_crime_rate_log        <- log(per_capita_crime_rate)
+# scatterplot of log of per capita crime rate versus median_home_value
+png(concat(IMAGES_DIR,'/housing - log of per capita crime rate versus median home value.png'), 
+    width = 1024, height = 1024)
+scatterplot(median_home_value~per_capita_crime_rate_log, 
+            xlab="Log of Per Capita Crime Rate", 
             ylab="Median Home Value (in $1000's)", 
-            main="Enhanced Scatterplot of \n Zoned Lots vs. Median Home Value (in $1000's)")
+            main="Enhanced Scatterplot of \n Log of Per Capita Crime Rate vs. Median Home Value (in $1000's)")
+dev.off()
+
+# scatterplot of zoned_over_25k_sq_ft versus median_home_value
+# ****Need to make this a dummy / reference variable b/c it is not continuous****
+png(concat(IMAGES_DIR,'/housing - zoned over 25k sq ft versus median home value.png'), 
+    width = 1024, height = 1024)
+scatterplot(median_home_value~zoned_over_25k_sq_ft, 
+            xlab="Zoned Over 25k Square Feet", 
+            ylab="Median Home Value (in $1000's)", 
+            main="Enhanced Scatterplot of \n Zoned Over 25k Square Feet vs. Median Home Value (in $1000's)")
+dev.off()
+
+# scatterplot of percent_lower_status versus median_home_value
+png(concat(IMAGES_DIR,'/housing - percent lower status versus median home value.png'), 
+    width = 1024, height = 1024)
+scatterplot(median_home_value~percent_lower_status, 
+                  xlab="Percent Lower Status", 
+                  ylab="Median Home Value (in $1000's)", 
+                  main="Enhanced Scatterplot of \n Percent Lower Status vs. Median Home Value (in $1000's)")
+dev.off()
+
+# percent lower status appears to need a transformation
+percent_lower_status_log10       <- log10(percent_lower_status)
+# scatterplot of percent_lower_status_log10 versus median_home_value
+png(concat(IMAGES_DIR,'/housing - log10 of percent lower status versus median home value.png'), 
+    width = 1024, height = 1024)
+scatterplot(median_home_value~percent_lower_status_log10, 
+                  xlab="Log10 of Percent Lower Status", 
+                  ylab="Median Home Value (in $1000's)", 
+                  main="Enhanced Scatterplot of \n Log10 of Percent Lower Status vs. Median Home Value (in $1000's)")
 dev.off()
 
 # a) regression of median_home_value - full first-order model
 a <- lm(median_home_value ~ 
-            per_capita_crime_rate + 
-            zoned_over_25k_sq_ft + 
-            business_acres + 
-            bounded_by_charles_river + 
-            nox_ppm + 
-            rooms_per_dwelling + 
-            units_built_before_1940 + 
-            distance_to_employment_centers + 
-            highway_accessibility + 
-            property_tax_rate_per_10k + 
-            student_teacher_ratio + 
-            african_american_proportion + 
-            percent_lower_status)
+          per_capita_crime_rate + 
+          zoned_over_25k_sq_ft + 
+          business_acres + 
+          bounded_by_charles_river + 
+          nox_ppm + 
+          rooms_per_dwelling + 
+          units_built_before_1940 + 
+          distance_to_employment_centers + 
+          highway_accessibility + 
+          property_tax_rate_per_10k + 
+          student_teacher_ratio + 
+          african_american_proportion + 
+          percent_lower_status)
 summary(a)
 # Call:
 #     lm(formula = median_home_value ~ per_capita_crime_rate + 
