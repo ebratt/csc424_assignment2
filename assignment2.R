@@ -30,7 +30,7 @@ load_package <- function(x) {
     }
     library(x, character.only=TRUE)
 }
-lapply(c("car"), load_package)
+lapply(c("car","psych"), load_package)
 
 #######################################################
 # PROBLEM 1                                           #
@@ -65,8 +65,7 @@ colnames(data) <- c('per_capita_crime_rate',
                     'african_american_proportion',
                     'percent_lower_status',
                     'median_home_value')
-dim(data)
-summary(data)
+write.table(describe(data), file=concat(OUTPUT_DIR,'/problem1_descriptions.csv'), sep=",")
 # create variable vectors
 per_capita_crime_rate            <- data$per_capita_crime_rate
 zoned_over_25k_sq_ft             <- data$zoned_over_25k_sq_ft
