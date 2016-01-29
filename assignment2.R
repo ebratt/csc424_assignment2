@@ -930,11 +930,22 @@ dev.off()
 # eigenvalues
 eigenvalues <- fit$sdev^2
 write.table(round(eigenvalues[1:5], 2), file=concat(OUTPUT_DIR,'/employment - eigenvalues.csv'), sep=",")
+png(concat(IMAGES_DIR,'/employment - eigenvalues.png'), 
+    width = 512, height = 512)
+plot(eigenvalues, type='b', xlab="Principal Components", ylab="Eigenvalues")
+dev.off()
 
-# rotations, or eigenvectors
-write.table(round(fit$rotation[,1:5], 4), file=concat(OUTPUT_DIR,'/employment - eigenvectors.csv'), sep=",")
+# eigenvectors
+cov_matrix <- cov(data[2:10])
+eigs <- eigen(cov_matrix)
+eigenvectors <- round(eigs$vectors, 4)
+write.table(eigenvectors, file=concat(OUTPUT_DIR,'/employment - eigenvectors.csv'), sep=",")
+
+# rotations
+write.table(round(fit$rotation[,1:5], 4), file=concat(OUTPUT_DIR,'/employment - rotations.csv'), sep=",")
 
 # bi-directional plot
+load_package('ggplot2')
 countries <- data[,1]
 PCbiplot <- function(PC, rownames, x="PC1", y="PC2") {
   # code is modified but mostly borrowed from:
@@ -957,4 +968,10 @@ PCbiplot <- function(PC, rownames, x="PC1", y="PC2") {
   plot <- plot + geom_segment(data=datapc, aes(x=0, y=0, xend=v1, yend=v2), arrow=arrow(length=unit(0.2,"cm")), alpha=0.75, color="red")
   plot
 }
+png(concat(IMAGES_DIR,'/employment - biplot.png'), 
+    width = 1024, height = 1024)
 PCbiplot(fit, countries)
+dev.off()
+
+# individual coordinates
+write.table(fit$x, file=concat(OUTPUT_DIR,'/employment - coordinates.csv'), sep=",")
