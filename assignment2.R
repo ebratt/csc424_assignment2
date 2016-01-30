@@ -985,3 +985,19 @@ dev.off()
 
 # individual coordinates
 write.table(fit$x, file=concat(OUTPUT_DIR,'/employment - coordinates.csv'), sep=",")
+
+
+
+# are there outliers in the data?
+# D^2 = (x - μ)' Σ^-1 (x - μ)
+D2 <- mahalanobis(data[2:10], colMeans(data[2:10]), cov_matrix)
+plot(density(D2, bw = 0.5),
+     main="Squared Mahalanobis distances, n=100, p=3") ; rug(D2)
+qqplot(qchisq(ppoints(100), df = 3), D2,
+       main = expression("Q-Q plot of Mahalanobis" * ~D^2 *
+                           " vs. quantiles of" * ~ chi[3]^2))
+abline(0, 1, col = 'gray')
+D2_t_value <- D2/length(data[1,])
+
+# are there any outliers?
+which(D2_t_value>=2.5)
