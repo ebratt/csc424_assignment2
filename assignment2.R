@@ -893,6 +893,15 @@ load_package <- function(x) {
 data <- read.table(concat(DATA_DIR,'/problem3.txt'), header=T, sep="\t")
 str(data)
 head(data)
+load_package('psych')
+describe(data)
+# how many are n/a?
+sum(is.na(data))
+# how many are NULL?
+sum(is.null(data))
+# how many are blank?
+length(which(data == ""))
+
 
 # look at relationships between variables
 load_package('car')
@@ -937,6 +946,7 @@ dev.off()
 
 # eigenvectors
 cov_matrix <- cov(data[2:10])
+cor_matrix <- cor(data[2:10])
 eigs <- eigen(cov_matrix)
 eigenvectors <- round(eigs$vectors, 4)
 write.table(eigenvectors, file=concat(OUTPUT_DIR,'/employment - eigenvectors.csv'), sep=",")
