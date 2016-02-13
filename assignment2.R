@@ -1,6 +1,6 @@
 # setup
 # clear the environment
-rm(list=ls())
+# rm(list=ls())
 
 DATA_DIR <- './data'
 IMAGES_DIR <- './images'
@@ -26,7 +26,7 @@ load_package <- function(x) {
     print(concat("package already installed: ", x))
   }
   else { 
-    install.packages(x) 
+    install.packages(x, repos="http://mirror.las.iastate.edu/CRAN/") 
   }
   library(x, character.only=TRUE)
 }
@@ -49,7 +49,13 @@ load_package <- function(x) {
 # LSTAT: % lower status of the population 
 # MEDV: Median value of owner-occupied homes in $1000's (output variable)
 
-lapply(c("car","psych","ggplot2", "lm.beta", "MASS","leaps"), load_package)
+# lapply(c("car","psych","ggplot2", "lm.beta", "MASS","leaps"), load_package)
+load_package("car")
+load_package("psych")
+load_package("ggplot2")
+load_package("lm.beta")
+load_package("MASS")
+load_package("leaps")
 
 # import the housing.data file
 data <- read.table(concat(DATA_DIR,'/housing.data'), header=F)
@@ -69,7 +75,7 @@ colnames(data) <- c('per_capita_crime_rate',
                     'percent_lower_status',
                     'median_home_value')
 # describe the data
-write.table(describe(data), file=concat(OUTPUT_DIR,'/housing - descriptions.csv'), sep=",")
+# write.table(describe(data), file=concat(OUTPUT_DIR,'/housing - descriptions.csv'), sep=",")
 # create variable vectors
 per_capita_crime_rate            <- data$per_capita_crime_rate
 zoned_over_25k_sq_ft             <- data$zoned_over_25k_sq_ft
@@ -595,7 +601,7 @@ write.table(coef(lm.a_red.beta), file=concat(OUTPUT_DIR,'/housing_model_reduced_
 #######################################################
 # setup
 # clear the environment
-rm(list=ls())
+# rm(list=ls())
 
 DATA_DIR <- './data'
 IMAGES_DIR <- './images'
@@ -621,7 +627,7 @@ load_package <- function(x) {
     print(concat("package already installed: ", x))
   }
   else { 
-    install.packages(x) 
+    install.packages(x, repos="http://mirror.las.iastate.edu/CRAN/") 
   }
   library(x, character.only=TRUE)
 }
@@ -637,8 +643,11 @@ load_package <- function(x) {
 # THGSDFC	  Total Mercury in soil, ng/g 	                                                     soil
 # TCSDFB	  Total Carbon in soil, % 	                                                         soil
 # TPRSDFB	  Total Phosphorus in soil, ug/g	                                                   soil
-lapply(c("gdata","ggplot2","CCA"), load_package)
-install.packages("GGally")
+# lapply(c("gdata","ggplot2","CCA"), load_package)
+load_package("gdata")
+load_package("ggplot2")
+load_package("CCA")
+install.packages("GGally", repos="http://mirror.las.iastate.edu/CRAN/")
 library(GGally)
 # get the data
 data <- read.xls(xls=concat(DATA_DIR,'/data_marsh_cleaned_hw2.xls'),
@@ -873,7 +882,7 @@ load_package <- function(x) {
     print(concat("package already installed: ", x))
   }
   else { 
-    install.packages(x) 
+    install.packages(x, repos="http://mirror.las.iastate.edu/CRAN/") 
   }
   library(x, character.only=TRUE)
 }
@@ -937,7 +946,7 @@ pcaCharts(fit)
 dev.off()
 
 # eigenvalues
-eigenvalues <- fit$sdev^2
+(eigenvalues <- fit$sdev^2)
 write.table(round(eigenvalues[1:5], 2), file=concat(OUTPUT_DIR,'/employment - eigenvalues.csv'), sep=",")
 png(concat(IMAGES_DIR,'/employment - eigenvalues.png'), 
     width = 512, height = 512)
@@ -948,10 +957,12 @@ dev.off()
 cov_matrix <- cov(data[2:10])
 cor_matrix <- cor(data[2:10])
 eigs <- eigen(cov_matrix)
-eigenvectors <- round(eigs$vectors, 4)
+(eigenvalues <- round(eigs$values, 4))
+(eigenvectors <- round(eigs$vectors, 4))
 write.table(eigenvectors, file=concat(OUTPUT_DIR,'/employment - eigenvectors.csv'), sep=",")
 
 # rotations
+(rotations <- round(fit$rotation[,1:5], 4))
 write.table(round(fit$rotation[,1:5], 4), file=concat(OUTPUT_DIR,'/employment - rotations.csv'), sep=",")
 
 # bi-directional plot
@@ -986,11 +997,72 @@ dev.off()
 # individual coordinates
 write.table(fit$x, file=concat(OUTPUT_DIR,'/employment - coordinates.csv'), sep=",")
 
+<<<<<<< HEAD
+load_package("MVA")
+png(concat(IMAGES_DIR,'/employment - biplot matrix.png'), width = 2048, height = 2048)
+pairs(fit$x[,1:4], ylim=c(-6,6),xlim=c(-6,6),panel=function(x,y,...) {
+  text(x,y,abbreviate(countries), cex=0.5)
+  bvbox(cbind(x,y), add=TRUE, cex=0.6)
+})
+dev.off()
 
+# New Data; from each variable to the PC's
+# Agriculture
+par(mfrow=c(2,2))
+out <- sapply(1:4, function(i) {
+  plot(data$Agr, fit$x[,i],
+       xlab=paste("PC",i,sep=""),
+       ylab="Percentage employed in agriculture")
+})
 
-# are there outliers in the data?
-# D^2 = (x - μ)' Σ^-1 (x - μ)
-D2 <- mahalanobis(data[2:10], colMeans(data[2:10]), cov_matrix)
+# Mining
+par(mfrow=c(2,2))
+out <- sapply(1:4, function(i) {
+  plot(data$Min, fit$x[,i],
+       xlab=paste("PC",i,sep=""),
+       ylab="Percentage employed in mining")
+})
+
+# Manufacturing
+par(mfrow=c(2,2))
+out <- sapply(1:4, function(i) {
+  plot(data$Man, fit$x[,i],
+       xlab=paste("PC",i,sep=""),
+       ylab="Percentage employed in manufacturing")
+})
+
+# Power supply
+par(mfrow=c(2,2))
+out <- sapply(1:4, function(i) {
+  plot(data$PS, fit$x[,i],
+       xlab=paste("PC",i,sep=""),
+       ylab="Percentage employed in power supply")
+})
+
+# FinalData = RowFeatureVector X RowDataAdjust
+# Obtain data in a matrix
+(Xoriginal <- t(as.matrix(data[,2:10])))
+# Center the data so that the mean of each row is 0
+(rm <- rowMeans(Xoriginal))
+X <- Xoriginal
+X <- Xoriginal-matrix(rep(rm, dim(X)[2]), nrow=dim(X)[1])
+# Calculate P
+A=X %*% t(X)
+E=eigen(A,TRUE)
+P=t(E$vectors)
+# Find the new data and standard deviations of the principal components
+newdata <- P %*% X
+(sdev <- sqrt(diag((1/(dim(X)[2]-1)* P %*% A %*% t(P)))))
+plot(newdata)
+
+par(mfrow=c(1,1))
+barplot(fit$sdev/fit$sdev[1])
+=======
+  
+  
+  # are there outliers in the data?
+  # D^2 = (x - μ)' Σ^-1 (x - μ)
+  D2 <- mahalanobis(data[2:10], colMeans(data[2:10]), cov_matrix)
 plot(density(D2, bw = 0.5),
      main="Squared Mahalanobis distances, n=100, p=3") ; rug(D2)
 qqplot(qchisq(ppoints(100), df = 3), D2,
@@ -1001,3 +1073,4 @@ D2_t_value <- D2/length(data[1,])
 
 # are there any outliers?
 which(D2_t_value>=2.5)
+>>>>>>> 9a5de5598cd8052652658a6fbe48f18cdbfa0cd8
